@@ -1,0 +1,42 @@
+# configs/unimodal_visual.yaml
+
+inherit: base_config.yaml
+
+model:
+  backbone: mobilenetv3_small_100        
+  feature_dim: 1024                      
+  pretrained: true
+  freeze_backbone: false
+  dropout: 0.5
+  classifier_hidden: 128                 
+  use_temporal_attention: true
+  use_self_attention: false
+  use_se_block: false                    
+
+data:
+  visual:
+    num_frames: 15
+  temporal_mode: stack
+
+training:
+  batch_size: 32
+  n_epochs: 60
+  learning_rate: 0.001
+  weight_decay: 0.001
+  result_subdir: unimodal_visual_mobilenet
+  early_stop_patience: 15
+  scheduler_type: plateau
+  plateau_factor: 0.5
+  plateau_patience: 5
+  n_threads: 2
+  manual_seed: 42
+  cudnn_deterministic: true
+  use_label_smoothing: true
+  smoothing: 0.15
+  grad_clip: 1.0
+  use_amp: true
+
+paths:
+  annotations: annotations/annotations_static.txt
+  output_visual: /content/RAVDESS_FACES
+  results: results

@@ -1,0 +1,116 @@
+# configs/multimodal.yaml
+
+inherit: base_config.yaml
+
+model:
+  type: multimodal_fusion
+  fusion_type: gmu
+  
+  audio_backbone: audio_1dcnn
+  visual_backbone: mobilenetv3_small_100
+  
+  feature_dim: 1024                         
+  fusion_dim: 128
+  classifier_hidden: 128
+  dropout: 0.5
+  freeze_backbone: false
+  use_temporal_attention: true
+  use_se_block: false
+
+training:
+  batch_size: 32
+  result_subdir: multimodal
+  n_folds: 5
+  loss_type: focal
+  focal_gamma: 2.0
+  focal_alpha: 0.25
+  use_mixup: true
+  mixup_alpha: 0.2
+  scheduler: onecycle
+  max_lr: 0.01
+  pct_start: 0.3
+  div_factor: 10
+  final_div_factor: 100
+  use_label_smoothing: false
+  use_modality_dropout: true
+  modality_dropout_prob: 0.25
+  fusion_lr: 0.001
+  weight_decay: 0.001
+  n_epochs: 50
+  early_stop_patience: 8
+  grad_clip: 1.0
+  use_amp: true
+  manual_seed: 42
+  cudnn_deterministic: true
+  embed_noise_std: 0.01
+  embed_feature_dropout: 0.05
+
+data:
+  multimodal: true
+  sync: true
+  audio_input_mode: "1d"
+  visual:
+    num_frames: 15
+
+lightweight:
+  enabled: true
+  target_device: "raspberry_pi_4b"
+  constraints:
+    max_parameters: 12
+    max_flops: 1
+    max_model_size: 50
+    max_inference_time: 100
+
+evaluation:
+  compare_fusion:
+    - concat
+    - gmu
+    - attention
+  masking_evaluation: true
+
+ablation:
+  enabled: true
+  base_fusion_type: gmu
+  n_epochs: 30
+  early_stop_patience: 5
+  fusion_dim_variants: [64, 128, 256]
+  variants:
+    - name: baseline
+      use_label_smoothing: false
+      use_modality_dropout: true
+      fusion_dim: 128
+    - name: no_label_smoothing
+      use_label_smoothing: false
+      use_modality_dropout: true
+      fusion_dim: 128
+    - name: no_modality_dropout
+      use_label_smoothing: false
+      use_modality_dropout: false
+      fusion_dim: 128
+    - name: fusion_dim_64
+      use_label_smoothing: false
+      use_modality_dropout: true
+      fusion_dim: 64
+    - name: fusion_dim_128
+      use_label_smoothing: false
+      use_modality_dropout: true
+      fusion_dim: 128
+    - name: fusion_dim_256
+      use_label_smoothing: false
+      use_modality_dropout: true
+      fusion_dim: 256
+    - name: with_se_block
+      use_label_smoothing: false
+      use_modality_dropout: true
+      fusion_dim: 128
+      use_se_block: true
+
+paths:
+  raw_video: /content/drive/MyDrive/RAVDESS
+  output_audio: /content/RAVDESS_MFCC_DELTA
+  output_visual: /content/RAVDESS_FACES
+  annotations: annotations/annotations_static.txt
+  embeddings_cache: /content/embeddings_cache
+  results: results/
+  audio_model: results/unimodal_audio/audio_best.pth
+  visual_model: results/unimodal_visual_mobilenet/visual_best.pth

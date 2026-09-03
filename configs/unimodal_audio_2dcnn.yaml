@@ -1,0 +1,47 @@
+# configs/unimodal_audio_2dcnn.yaml
+
+inherit: base_config.yaml
+
+model:
+  backbone: audio_2dcnn
+  pretrained: false
+  freeze_backbone: false
+  classifier_hidden: 384        
+  use_se_block: true
+  dropout: 0.5
+
+training:
+  batch_size: 64
+  n_epochs: 100
+  learning_rate: 0.0005
+  weight_decay: 0.001
+  result_subdir: unimodal_audio_2dcnn
+  early_stop_patience: 25
+  scheduler_type: plateau
+  plateau_factor: 0.5
+  plateau_patience: 5
+  n_threads: 2
+  manual_seed: 42
+  cudnn_deterministic: true
+  use_label_smoothing: true
+  smoothing: 0.1
+  grad_clip: 1.0
+  use_amp: true
+
+data:
+  input_mode: "2d"
+  augmentation:
+    spec_augment:
+      enabled: true
+      freq_mask: 5
+      time_mask: 8
+      num_masks: 2
+    gaussian_noise:
+      enabled: true
+      std: 0.005
+      p: 0.1
+
+paths:
+  annotations: annotations/annotations_static.txt
+  output_audio: /content/RAVDESS_MELSPEC
+  results: results

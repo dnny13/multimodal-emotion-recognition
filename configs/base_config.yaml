@@ -1,0 +1,120 @@
+# configs/base_config.yaml
+
+dataset:
+  name: RAVDESS
+  modality: 01
+  num_classes: 8
+  emotions:
+    - neutral
+    - calm
+    - happy
+    - sad
+    - angry
+    - fearful
+    - disgust
+    - surprised
+
+split:
+  train_actors: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+  val_actors: [17, 18, 19, 20]
+  test_actors: [21, 22, 23, 24]
+
+data:
+  audio:
+    sr: 16000
+    n_mfcc: 120
+    hop_length: 512
+    n_fft: 2048
+    fmax: 8000
+    target_shape: [120, 224]
+    duration: 3.0
+    augmentation:
+      spec_augment:
+        enabled: true
+        freq_mask: 6
+        time_mask: 6
+        num_masks: 2
+      gaussian_noise:
+        enabled: true
+        std: 0.005
+        p: 0.3
+  visual:
+    face_size: 224
+    num_frames: 15
+    face_detector: dnn_ssd
+    augmentation:
+      horizontal_flip: true
+      rotation_degrees: 8
+      color_jitter: true
+      brightness: 0.15
+      contrast: 0.15
+      saturation: 0.15
+
+model:
+  backbone: efficientnetv2_b0
+  audio_backbone: audio_1dcnn
+  feature_dim: 1280
+  dropout: 0.5
+  pretrained: true
+  freeze_backbone: false
+  use_temporal_attention: true
+  use_se_block: true
+  progressive_unfreeze:
+    enabled: true
+    start_epoch: 3
+    unfreeze_steps: 2
+
+training:
+  batch_size: 32
+  n_epochs: 80
+  learning_rate: 0.0001
+  learning_rate_visual: 0.0001
+  learning_rate_audio: 0.0005
+  learning_rate_fusion: 0.001
+  weight_decay: 0.0005
+  optimizer: adamw
+  scheduler: cosine
+  cosine_t_max: 80
+  cosine_eta_min: 0.000001
+  early_stop_patience: 8
+  n_threads: 2
+  manual_seed: 42
+  cudnn_deterministic: true
+  use_label_smoothing: false
+  smoothing: 0.1
+  grad_clip: 1.0
+  use_amp: true
+
+evaluation:
+  metrics:
+    - accuracy
+    - weighted_accuracy
+    - unweighted_accuracy
+    - precision
+    - recall
+    - f1_macro
+    - f1_weighted
+    - confusion_matrix
+    - cohen_kappa
+  efficiency:
+    - params
+    - flops
+    - model_size
+    - inference_time
+
+lightweight:
+  enabled: true
+  target_device: "raspberry_pi_4b"
+  constraints:
+    max_parameters: 12
+    max_flops: 2
+    max_model_size: 50
+    max_inference_time: 100
+
+paths:
+  raw_video: /content/drive/MyDrive/RAVDESS
+  output_audio: /content/RAVDESS_MFCC_DELTA
+  output_visual: /content/RAVDESS_FACES
+  annotations: annotations/annotations_static.txt
+  embeddings_cache: /content/embeddings_cache
+  results: results/
