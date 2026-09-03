@@ -16,6 +16,7 @@ model:
 
 training:
   batch_size: 32
+  n_threads: 2               
   result_subdir: multimodal
   n_folds: 5
   loss_type: focal

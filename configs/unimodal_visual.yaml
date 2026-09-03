@@ -6,7 +6,7 @@ model:
   backbone: mobilenetv3_small_100
   feature_dim: 1024
   pretrained: true
-  freeze_backbone: false
+  freeze_backbone: true          # 🔧 FIX: mulai frozen, dibuka bertahap oleh progressive_unfreeze
   dropout: 0.5
   classifier_hidden: 128
   use_temporal_attention: true
@@ -22,7 +22,7 @@ training:
   batch_size: 32
   n_epochs: 60
   learning_rate: 0.001
-  weight_decay: 0.001
+  weight_decay: 0.005             # 🔧 FIX: dinaikkan dari 0.001 -> regularisasi lebih kuat
   result_subdir: unimodal_visual_mobilenet
   early_stop_patience: 15
   scheduler_type: plateau
@@ -35,6 +35,10 @@ training:
   smoothing: 0.15
   grad_clip: 1.0
   use_amp: true
+  progressive_unfreeze:           # 🔧 FIX: section baru — sebelumnya tidak ada & tidak terpakai
+    enabled: true
+    start_epoch: 5
+    unfreeze_steps: 4
 
 paths:
   annotations: annotations/annotations_static.txt

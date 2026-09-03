@@ -10,6 +10,12 @@ Early stopping berdasarkan cross-actor validation (Actor 17-20).
   - Deteksi otomatis dimensi output backbone MobileNetV3-Small (bisa 1024, bukan 576).
   - target_dim disesuaikan dengan output aktual backbone, bukan dari config hardcoded.
   - Menambahkan penyesuaian model jika mismatch terjadi.
+
+🔧 FIX (v2 — overfitting patch):
+  - backbone_name kini diteruskan ke RavdessVisual (train/val/test) agar log dataset
+    tidak lagi menampilkan default 'efficientnetv2_b0' yang salah.
+  - progressive_unfreeze kini diteruskan dari config ke train_config, sebelumnya
+    hilang sehingga Progressive Unfreeze SELALU nonaktif walau diaktifkan di YAML.
 """
 
 import os
@@ -87,13 +93,17 @@ def run_exp2_unimodal_visual(config_path=None, override=None):
     transform_val = get_visual_transforms(is_training=False, image_size=(224, 224))
     transform_test = get_visual_transforms(is_training=False, image_size=(224, 224))
 
+    # 🔧 FIX: backbone_name diteruskan secara eksplisit ke ketiga dataset,
+    # sebelumnya tidak diisi sehingga log memakai default 'efficientnetv2_b0'
+    # walau model asli memakai backbone_name dari config (mis. mobilenetv3_small_100).
     train_dataset = RavdessVisual(
         annotation_path=annotation_path,
         root_dir=visual_root,
         subset='training',
         transform=transform_train,
         num_frames=config['data']['visual']['num_frames'],
-        temporal_mode=config['data'].get('temporal_mode', 'stack')
+        temporal_mode=config['data'].get('temporal_mode', 'stack'),
+        backbone_name=backbone_name
     )
     val_dataset = RavdessVisual(
         annotation_path=annotation_path,
@@ -101,7 +111,8 @@ def run_exp2_unimodal_visual(config_path=None, override=None):
         subset='validation',
         transform=transform_val,
         num_frames=config['data']['visual']['num_frames'],
-        temporal_mode=config['data'].get('temporal_mode', 'stack')
+        temporal_mode=config['data'].get('temporal_mode', 'stack'),
+        backbone_name=backbone_name
     )
     test_dataset = RavdessVisual(
         annotation_path=annotation_path,
@@ -109,7 +120,8 @@ def run_exp2_unimodal_visual(config_path=None, override=None):
         subset='testing',
         transform=transform_test,
         num_frames=config['data']['visual']['num_frames'],
-        temporal_mode=config['data'].get('temporal_mode', 'stack')
+        temporal_mode=config['data'].get('temporal_mode', 'stack'),
+        backbone_name=backbone_name
     )
 
     test_loader = DataLoader(
@@ -166,6 +178,13 @@ def run_exp2_unimodal_visual(config_path=None, override=None):
     print(f"  Use SE-Block   : {config['model'].get('use_se_block', False)}")
     print(f"  Total Params   : {sum(p.numel() for p in model.parameters()):,}")
 
+    # 🔧 Info tambahan: tampilkan status progressive unfreeze di ringkasan model
+    pu_cfg = config['training'].get('progressive_unfreeze', {})
+    print(f"  Progressive Unfreeze  : {'✅' if pu_cfg.get('enabled', False) else '❌'}")
+    if pu_cfg.get('enabled', False):
+        print(f"    Start Epoch  : {pu_cfg.get('start_epoch', 3)}")
+        print(f"    Unfreeze Steps: {pu_cfg.get('unfreeze_steps', 3)}")
+
     use_label_smoothing = config['training'].get('use_label_smoothing', False)
     if use_label_smoothing:
         smoothing = config['training'].get('smoothing', 0.1)
@@ -212,7 +231,11 @@ def run_exp2_unimodal_visual(config_path=None, override=None):
         'use_amp': config['training'].get('use_amp', True),
         'use_label_smoothing': use_label_smoothing,
         'learning_rate': config['training']['learning_rate'],
-        'weight_decay': config['training']['weight_decay']
+        'weight_decay': config['training']['weight_decay'],
+        # 🔧 FIX: sebelumnya key ini tidak ada sama sekali di train_config,
+        # sehingga train_unimodal_visual_static() selalu membaca dict kosong {}
+        # dan pu_enabled selalu bernilai False, apa pun isi YAML.
+        'progressive_unfreeze': config['training'].get('progressive_unfreeze', {})
     }
 
     # ============================================================
