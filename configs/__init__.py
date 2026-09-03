@@ -2,35 +2,15 @@
 """
 configs/__init__.py
 ===================
-Fungsi untuk memuat konfigurasi dari file YAML dengan dukungan inheritance dan deteksi siklus.
+Package untuk konfigurasi YAML.
+Menyediakan fungsi load_config() untuk memuat file konfigurasi.
 """
 
 import os
 import yaml
+from typing import Dict, Any
 
-def _deep_merge(base, override):
-    """Menggabungkan dua dictionary secara rekursif."""
-    for key, value in override.items():
-        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
-            _deep_merge(base[key], value)
-        else:
-            base[key] = value
-    return base
-
-def load_config(config_path, _visited=None):
-    """
-    Memuat konfigurasi dari file YAML. Mendukung inheritance melalui key 'inherit'.
-    Mendeteksi siklus untuk menghindari infinite recursion.
-    """
-    if _visited is None:
-        _visited = set()
-
-    # Gunakan absolute path untuk deteksi siklus yang konsisten
-    abs_path = os.path.abspath(config_path)
-    if abs_path in _visited:
-        raise RecursionError(f"Circular inheritance detected: {config_path}")
-    _visited.add(abs_path)
-
+def load_config(config_path: str) -> Dict[str, Any]:
     if not os.path.exists(config_path):
         raise FileNotFoundError(f"Config file not found: {config_path}")
 
@@ -38,26 +18,14 @@ def load_config(config_path, _visited=None):
         config = yaml.safe_load(f)
 
     if 'inherit' in config:
-        base_ref = config['inherit']
+        inherit_path = config.pop('inherit')
         base_dir = os.path.dirname(config_path)
+        inherit_path = os.path.join(base_dir, inherit_path)
 
-        # Tentukan base path
-        if os.path.isabs(base_ref):
-            base_path = base_ref
-        else:
-            # Jika base_ref hanya nama file (tanpa path)
-            if os.path.sep not in base_ref:
-                base_path = os.path.join(base_dir, base_ref)
-            else:
-                base_path = os.path.join(base_dir, base_ref)
-
-        # Load base config dengan _visited yang sama
-        base_config = load_config(base_path, _visited)
-
-        # Deep merge
-        merged = base_config.copy()
-        _deep_merge(merged, config)
-        config = merged
+        if os.path.exists(inherit_path):
+            base_config = load_config(inherit_path)
+            merged = {**base_config, **config}
+            return merged
 
     return config
 

@@ -3,15 +3,15 @@
 inherit: base_config.yaml
 
 model:
-  backbone: mobilenetv3_small_100        
-  feature_dim: 1024                      
+  backbone: mobilenetv3_small_100
+  feature_dim: 1024
   pretrained: true
   freeze_backbone: false
   dropout: 0.5
-  classifier_hidden: 128                 
+  classifier_hidden: 128
   use_temporal_attention: true
   use_self_attention: false
-  use_se_block: false                    
+  use_se_block: false
 
 data:
   visual:

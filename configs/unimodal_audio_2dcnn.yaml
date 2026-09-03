@@ -6,7 +6,7 @@ model:
   backbone: audio_2dcnn
   pretrained: false
   freeze_backbone: false
-  classifier_hidden: 384        
+  classifier_hidden: 384
   use_se_block: true
   dropout: 0.5
 
